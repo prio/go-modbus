@@ -1,9 +1,6 @@
-//package main
-//author: Lubia Yang
-//create: 2013-10-15
-//about: www.lubia.me
+// Package modbusclient provides modbus RTU and TCP access for client (master) applications to communicate with server (slave) devices. Logic specifically in this file implements the RTU protocol.
 
-package modbusrtu
+package modbusclient
 
 import (
 	"errors"
@@ -11,7 +8,23 @@ import (
 	"time"
 )
 
-// Read
+func crc(data []byte) uint16 {
+	var crc16 uint16 = 0xffff
+	l := len(data)
+	for i := 0; i < l; i++ {
+		crc16 ^= uint16(data[i])
+		for j := 0; j < 8; j++ {
+			if crc16&0x0001 > 0 {
+				crc16 = (crc16 >> 1) ^ 0xA001
+			} else {
+				crc16 >>= 1
+			}
+		}
+	}
+	return crc16
+}
+
+// RTURead
 //   parameters
 //   int        fd:  file descripter for serial device
 //   byte  addr:  slave device address
@@ -19,7 +32,7 @@ import (
 //   uint16 sr:    starting register number
 //   uint16 nr:    number of registers to read
 //   byte data[]: memory area for read data
-func Read(fd *os.File, addr, code byte, sr, nr uint16) ([]byte, error) {
+func RTURead(fd *os.File, addr, code byte, sr, nr uint16) ([]byte, error) {
 	//Preparation for Sending a Packet
 	var send_packet = make([]byte, 8)
 
@@ -32,7 +45,7 @@ func Read(fd *os.File, addr, code byte, sr, nr uint16) ([]byte, error) {
 	send_packet[5] = byte(nr & 0xff) // Number of Registers (Low Byte)
 
 	//Add CRC16
-	send_packet_crc := Crc(send_packet[:6])
+	send_packet_crc := crc(send_packet[:6])
 	send_packet[6] = byte(send_packet_crc & 0xff)
 	send_packet[7] = byte(send_packet_crc >> 8)
 
@@ -67,14 +80,14 @@ func Read(fd *os.File, addr, code byte, sr, nr uint16) ([]byte, error) {
 
 	//CRC check
 	l := recv_packet[2]
-	recv_packet_crc := Crc(recv_packet[:3+l])
+	recv_packet_crc := crc(recv_packet[:3+l])
 	if recv_packet[3+l] != byte((recv_packet_crc&0xff)) || recv_packet[3+l+1] != byte((recv_packet_crc>>8)) {
 		return []byte{}, errors.New("MODBUS_ERROR_COMMUNICATION")
 	}
 	return recv_packet[3 : l+3], nil
 }
 
-// Write
+// RTUWrite
 //   parameters
 //   int        fd:  file descripter for serial device
 //   byte  addr:  slave device address
@@ -82,7 +95,7 @@ func Read(fd *os.File, addr, code byte, sr, nr uint16) ([]byte, error) {
 //   uint16 sr:    starting register number
 //   uint16 nr:    number of registers to write
 //   byte data[]: memory area for writing data
-func Write(fd *os.File, addr, code byte, sr, nr uint16, data []byte) error {
+func RTUWrite(fd *os.File, addr, code byte, sr, nr uint16, data []byte) error {
 	var send_packet = make([]byte, 256)
 
 	// Packet Construction
@@ -100,7 +113,7 @@ func Write(fd *os.File, addr, code byte, sr, nr uint16, data []byte) error {
 
 	length := 7 + nr*2 + 2
 	// Add CRC16
-	send_packet_crc := Crc(send_packet[:length-2])
+	send_packet_crc := crc(send_packet[:length-2])
 	send_packet[length-2] = byte(send_packet_crc & 0xff)
 	send_packet[length-1] = byte(send_packet_crc >> 8)
 
@@ -136,26 +149,10 @@ func Write(fd *os.File, addr, code byte, sr, nr uint16, data []byte) error {
 	//Target Data Filed Check
 	if recv_packet[2] == send_packet[2] && recv_packet[3] == send_packet[3] && recv_packet[4] == send_packet[4] && recv_packet[5] == send_packet[5] {
 		//CRC check
-		recv_packet_crc := Crc(recv_packet[:6])
+		recv_packet_crc := crc(recv_packet[:6])
 		if recv_packet[6] == byte((recv_packet_crc&0xff)) && recv_packet[7] == byte((recv_packet_crc>>8)) {
 			return nil
 		}
 	}
 	return errors.New("MODBUS_ERROR_COMMUNICATION")
-}
-
-func Crc(data []byte) uint16 {
-	var crc16 uint16 = 0xffff
-	l := len(data)
-	for i := 0; i < l; i++ {
-		crc16 ^= uint16(data[i])
-		for j := 0; j < 8; j++ {
-			if crc16&0x0001 > 0 {
-				crc16 = (crc16 >> 1) ^ 0xA001
-			} else {
-				crc16 >>= 1
-			}
-		}
-	}
-	return crc16
 }
