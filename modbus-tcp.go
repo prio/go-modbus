@@ -5,51 +5,50 @@
 package modbusclient
 
 import (
+    "fmt"
     "io/ioutil"
     "net"
 )
 
-func send(a string, d []byte) ([]byte, error) {
-    addr, err := net.ResolveTCPAddr("tcp4", a)
+// GenerateTCPFrame is a method corresponding to a TCPFrame object which
+// returns a byte array representing the associated TCP/IP application data
+// unit (ADU)
+func (frame *TCPFrame) GenerateTCPFrame() []byte {
+    packetLen := len(frame.Data) + 8             // 7 bytes for the header + 1 for the function code
+    packet := make([]byte, packetLen)            //len(m.Data)+8) // 7 bytes for the header + 1 for the function code
+    packet[0] = byte(frame.TransactionID >> 8)   // Transaction ID (High Byte)
+    packet[1] = byte(frame.TransactionID & 0xff) //                (Low Byte)
+    packet[2] = 0x00                             // Protocol ID (2 bytes) -- always 00
+    packet[3] = 0x00
+    packet[4] = byte((packetLen - 4) >> 8)   // Remaining length of packet (High Byte)
+    packet[5] = byte((packetLen - 4) & 0xff) //                            (Low Byte)
+    packet[6] = 0x01                         // Unit ID (1 byte)
+    packet[7] = frame.FunctionCode
+    packet = append(packet, frame.Data...)
+    fmt.Println(fmt.Sprintf("%x", packet))
+
+    return packet
+}
+
+// TransmitAndReceive is a method corresponding to a TCPFrame object which
+// generates the corresponding ADU, transmits it to the modbus server
+// (slave device) specified by the TCP address, and returns a byte array
+// of the slave device's reply, and error (if any)
+func (frame *TCPFrame) TransmitAndReceive(slaveAddress string) ([]byte, error) {
+    adu := frame.GenerateTCPFrame()
+    addr, err := net.ResolveTCPAddr("tcp4", fmt.Sprintf("%s:%d", slaveAddress, MODBUS_PORT))
     if err == nil {
-        c, err := net.DialTCP("tcp", nil, addr)
+        conn, err := net.DialTCP("tcp", nil, addr)
+        defer conn.Close()
         if err == nil {
-            _, err = c.Write(d)
+            _, err = conn.Write(adu)
             if err == nil {
-                r, err := ioutil.ReadAll(c)
+                res, err := ioutil.ReadAll(conn)
                 if err == nil {
-                    return r, nil
+                    return res, nil
                 }
             }
         }
     }
     return []byte{}, err
-}
-
-type MbTcp struct {
-    Addr byte
-    Code byte
-    Data []byte
-}
-
-func (m MbTcp) generate() []byte {
-    head := make([]byte, 8, 8)
-    l := byte(len(m.Data) + 2)
-    head[0] = 0x00
-    head[1] = 0x00
-    head[2] = 0x00
-    head[3] = 0x00
-    head[4] = 0x00
-    head[5] = l
-    head[6] = m.Addr
-    head[7] = m.Code
-    body := make([]byte, 260)
-    body = append(body, head...)
-    body = append(body, m.Data...)
-    return body
-}
-
-func (m *MbTcp) TCPSend(addr string) ([]byte, error) {
-    req := m.generate()
-    return send(addr, req)
 }
