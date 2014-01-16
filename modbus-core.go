@@ -4,6 +4,10 @@
 
 package modbusclient
 
+import (
+	"errors"
+)
+
 const (
 	MODBUS_PORT       = 502
 	RTU_FRAME_MAXSIZE = 512
@@ -29,8 +33,28 @@ const (
 	EXCEPTION_GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND = 0x0B
 )
 
+var MODBUS_EXCEPTIONS = map[uint16]error{
+	EXCEPTION_ILLEGAL_FUNCTION:                        errors.New("Modbus Error: Illegal Function (0x01)"),
+	EXCEPTION_DATA_ADDRESS:                            errors.New("Modbus Error: Data Address (0x02)"),
+	EXCEPTION_DATA_VALUE:                              errors.New("Modbus Error: Data Value (0x03)"),
+	EXCEPTION_SLAVE_DEVICE_FAILURE:                    errors.New("Modbus Error: Slave Device Failure (0x04)"),
+	EXCEPTION_ACKNOWLEDGE:                             errors.New("Modbus Error: Acknowledge (0x05)"),
+	EXCEPTION_SLAVE_DEVICE_BUSY:                       errors.New("Modbus Error: Slave Device Busy (0x06)"),
+	EXCEPTION_MEMORY_PARITY_ERROR:                     errors.New("Modbus Error: Memory Parity Error (0x08)"),
+	EXCEPTION_GATEWAY_PATH_UNAVAILABLE:                errors.New("Modbus Error: Gateway Path Unavailable (0x0A)"),
+	EXCEPTION_GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND: errors.New("Modbus Error: Gateway Target Device Failed to Respond (0x0B)"),
+}
+
 type TCPFrame struct {
 	TransactionID int
 	FunctionCode  byte
 	Data          []byte
+}
+
+type RTUFrame struct {
+	SlaveAddress      byte
+	FunctionCode      byte
+	StartRegister     uint16
+	NumberOfRegisters uint16
+	Data              []byte
 }
