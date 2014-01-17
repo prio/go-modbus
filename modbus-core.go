@@ -4,9 +4,7 @@
 
 package modbusclient
 
-import (
-	"errors"
-)
+import "errors"
 
 const (
 	MODBUS_PORT       = 502
@@ -22,6 +20,8 @@ const (
 	FUNCTION_WRITE_MULTIPLE_REGISTERS      = 0x10
 	FUNCTION_MODBUS_ENCAPSULATED_INTERFACE = 0x2B
 
+	EXCEPTION_UNSPECIFIED = 0x00 // catch-all for unspecified modbus errors
+
 	EXCEPTION_ILLEGAL_FUNCTION                        = 0x01
 	EXCEPTION_DATA_ADDRESS                            = 0x02
 	EXCEPTION_DATA_VALUE                              = 0x03
@@ -34,6 +34,7 @@ const (
 )
 
 var MODBUS_EXCEPTIONS = map[uint16]error{
+	EXCEPTION_UNSPECIFIED:                             errors.New("Modbus Error"),
 	EXCEPTION_ILLEGAL_FUNCTION:                        errors.New("Modbus Error: Illegal Function (0x01)"),
 	EXCEPTION_DATA_ADDRESS:                            errors.New("Modbus Error: Data Address (0x02)"),
 	EXCEPTION_DATA_VALUE:                              errors.New("Modbus Error: Data Value (0x03)"),
