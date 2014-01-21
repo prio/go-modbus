@@ -46,10 +46,33 @@ var MODBUS_EXCEPTIONS = map[uint16]error{
 	EXCEPTION_GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND: errors.New("Modbus Error: Gateway Target Device Failed to Respond (0x0B)"),
 }
 
+// ValidFunction returns a boolean, depending on whether or not the
+// given code corresponds to a valid modbus function code, read, write,
+// or interface
+func ValidFunction(fnCode byte) bool {
+	return ((fnCode >= FUNCTION_READ_COILS && fnCode <= FUNCTION_WRITE_SINGLE_REGISTER) ||
+		fnCode == FUNCTION_WRITE_MULTIPLE_REGISTERS ||
+		fnCode == FUNCTION_MODBUS_ENCAPSULATED_INTERFACE)
+}
+
+// ValidReadFunction returns a boolean, depending on whether or not the
+// given code corresponds to a valid modbus read function code
+func ValidReadFunction(fnCode byte) bool {
+	return (fnCode >= FUNCTION_READ_COILS && fnCode <= FUNCTION_READ_INPUT_REGISTERS)
+}
+
+// ValidWriteFunction returns a boolean, depending on whether or not the
+// given code corresponds to a valid modbus write function code
+func ValidWriteFunction(fnCode byte) bool {
+	return (fnCode >= FUNCTION_WRITE_SINGLE_COIL && fnCode <= FUNCTION_WRITE_MULTIPLE_REGISTERS)
+}
+
 type TCPFrame struct {
-	TransactionID int
-	FunctionCode  byte
-	Data          []byte
+	TransactionID          int
+	FunctionCode           byte
+	EthernetToSerialBridge bool
+	SlaveAddress           byte
+	Data                   []byte
 }
 
 type RTUFrame struct {

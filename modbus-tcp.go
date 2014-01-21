@@ -13,15 +13,24 @@ import (
 // returns a byte array representing the associated TCP/IP application data
 // unit (ADU)
 func (frame *TCPFrame) GenerateTCPFrame() []byte {
-	packetLen := len(frame.Data) + 8             // 7 bytes for the header + 1 for the function code
-	packet := make([]byte, packetLen)            //len(m.Data)+8) // 7 bytes for the header + 1 for the function code
+	packetLen := len(frame.Data) + 8 // 7 bytes for the header + 1 for the function code
+	packet := make([]byte, packetLen)
 	packet[0] = byte(frame.TransactionID >> 8)   // Transaction ID (High Byte)
 	packet[1] = byte(frame.TransactionID & 0xff) //                (Low Byte)
 	packet[2] = 0x00                             // Protocol ID (2 bytes) -- always 00
 	packet[3] = 0x00
 	packet[4] = byte((packetLen - 4) >> 8)   // Remaining length of packet (High Byte)
 	packet[5] = byte((packetLen - 4) & 0xff) //                            (Low Byte)
-	packet[6] = 0x01                         // Unit ID (1 byte)
+
+	/* Unit ID (1 byte):
+	   If the slave device is using an Ethernet-to-serial bridge, set this to the
+	   corresponding SlaveAddress. Otherwise, use 0x00 or 0xff for "do not bridge".
+	*/
+	if frame.EthernetToSerialBridge {
+		packet[6] = frame.SlaveAddress
+	} else {
+		packet[6] = 0xff
+	}
 	packet[7] = frame.FunctionCode
 	packet = append(packet, frame.Data...)
 
