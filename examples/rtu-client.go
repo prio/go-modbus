@@ -37,7 +37,7 @@ func RTUWrite(fd *os.File, slaveAddress, functionCode byte, startRegister, numRe
 
 func main() {
 
-	// get the serial port from the command line
+	// get the device serial port from the command line
 	var serialDevice string
 	const defaultInput = ""
 	flag.StringVar(&serialDevice, "serial", defaultInput, "Serial port (RS485) to use, e.g., /dev/ttyS0 (try \"dmesg | grep tty\" to find)")
