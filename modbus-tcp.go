@@ -68,3 +68,34 @@ func (frame *TCPFrame) TransmitAndReceive(server string, port int) ([]byte, erro
 	}
 	return []byte{}, err
 }
+
+// viaTCP is a private method which applies the given function validator, to
+// make sure the functionCode passed is valid for the operation desired. If
+// correct, it creates a TCPFrame given the corresponding information,
+// calls TransmitAndReceive, returning the result. Otherwise, it returns
+// an illegal function error.
+func viaTCP(fnValidator func(byte) bool, h string, p, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte) ([]byte, error) {
+	if fnValidator(functionCode) {
+		frame := new(TCPFrame)
+		frame.TransactionID = transactionID
+		frame.FunctionCode = functionCode
+		frame.EthernetToSerialBridge = serialBridge
+		frame.SlaveAddress = slaveAddress
+		frame.Data = data
+		result, err := frame.TransmitAndReceive(h, p)
+		return result, err
+	}
+	return []byte{}, MODBUS_EXCEPTIONS[EXCEPTION_ILLEGAL_FUNCTION]
+}
+
+// TCPRead performs the given modbus Read function over TCP to the given
+// host/port combination, using the given frame data
+func TCPRead(h string, p, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte) ([]byte, error) {
+	return viaTCP(ValidReadFunction, h, p, transactionID, functionCode, serialBridge, slaveAddress, data)
+}
+
+// TCPWrite performs the given modbus Write function over TCP to the given
+// host/port combination, using the given frame data
+func TCPWrite(h string, p, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte) ([]byte, error) {
+	return viaTCP(ValidWriteFunction, h, p, transactionID, functionCode, serialBridge, slaveAddress, data)
+}
