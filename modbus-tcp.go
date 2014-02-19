@@ -19,20 +19,20 @@ func (frame *TCPFrame) GenerateTCPFrame() []byte {
 	packet[1] = byte(frame.TransactionID & 0xff) //                (Low Byte)
 	packet[2] = 0x00                             // Protocol ID (2 bytes) -- always 00
 	packet[3] = 0x00
-	packet[4] = byte((packetLen - 4) >> 8)   // Remaining length of packet (High Byte)
-	packet[5] = byte((packetLen - 4) & 0xff) //                            (Low Byte)
+	packet[4] = byte((packetLen - 6) >> 8)   // Remaining length of packet, beyond this point (High Byte)
+	packet[5] = byte((packetLen - 6) & 0xff) //                                               (Low Byte)
 
 	/* Unit ID (1 byte):
 	   If the slave device is using an Ethernet-to-serial bridge, set this to the
-	   corresponding SlaveAddress. Otherwise, use 0x00 or 0xff for "do not bridge".
+	   corresponding SlaveAddress. Otherwise, use 0x00 for "do not bridge".
 	*/
 	if frame.EthernetToSerialBridge {
 		packet[6] = frame.SlaveAddress
 	} else {
-		packet[6] = 0xff
+		packet[6] = 0x00
 	}
 	packet[7] = frame.FunctionCode
-	packet = append(packet, frame.Data...)
+	packet = append(packet[:8], frame.Data...)
 
 	return packet
 }

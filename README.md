@@ -19,4 +19,5 @@ This code was originally forked from [lubia/modbus](https://github.com/lubia/mod
 ## Acknowledgements
 - [Lubia Yang](http://www.lubia.me) for the [original modbus code](https://github.com/lubia/modbus) in Go
 - [l.lefebvre](http://source.perl.free.fr/) for his excellent [modbus client](https://github.com/sourceperl/MBclient) and [server (slave device simulator)](https://github.com/sourceperl/mbserverd) code repositories
+- [modbusdriver.com](http://www.modbusdriver.com/) for their free [Diagslave Modbus Slave Simulator](http://www.modbusdriver.com/diagslave.html) tool
 
