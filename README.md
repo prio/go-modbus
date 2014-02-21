@@ -10,6 +10,42 @@ Note that in modbus terminology, _client_ refers to the __master__ application o
 
 This code was originally forked from [lubia/modbus](https://github.com/lubia/modbus) and repositioned as a pure client (master) library for use by controller applications.
 
+### Enabling the USB Serial Port adapter (RS-232) for RTU Access
+
+Slave devices which have [USB](http://en.wikipedia.org/wiki/Usb) ports for RTU access will not work immediately upon hot-plugging into a master computer.
+
+For master devices running linux, the USB serial port adapter must be explicitly activated using the <tt>usbserial</tt> linux kernel module, as follows:
+
+1. Immediately after plugging in the serial port USB, use <tt>dmesg</tt> to find the vendor and product ID numbers:
+
+    ```
+$ sudo dmesg | tail
+```
+    There should be a line which looks like this:
+	
+	````
+[  556.572417] usb 3-1: New USB device found, idVendor=04d8, idProduct=000c
+```
+
+2. Use the <tt>usbserial</tt> linux kernel module to enable it, using the same vendor and product ID numbers from the dmesg output:
+
+    ```
+$ sudo modprobe usbserial vendor=0x04d8 product=0x000c
+```
+
+3. Confirm that the serial port is attached to a specific tty device file:
+
+    ```
+$ sudo dmesg | tail
+```
+
+    There should now be a line like this:
+	```
+[ 2134.866724] usb 3-1: generic converter now attached to ttyUSB0
+```
+
+    which means that the serial port is now programmatically accessible via <tt>/dev/ttyUSB0</tt>
+
 ## References
 - [Modbus Technical Specifications](http://www.modbus.org/specs.php)
 - [Modbus Interface Tutorial](http://www.lammertbies.nl/comm/info/modbus.html)
@@ -20,4 +56,4 @@ This code was originally forked from [lubia/modbus](https://github.com/lubia/mod
 - [Lubia Yang](http://www.lubia.me) for the [original modbus code](https://github.com/lubia/modbus) in Go
 - [l.lefebvre](http://source.perl.free.fr/) for his excellent [modbus client](https://github.com/sourceperl/MBclient) and [server (slave device simulator)](https://github.com/sourceperl/mbserverd) code repositories
 - [modbusdriver.com](http://www.modbusdriver.com/) for their free [Diagslave Modbus Slave Simulator](http://www.modbusdriver.com/diagslave.html) tool
-
+- [Mohammad Hafiz (mypapit)](https://plus.google.com/113437861006502895279?rel=author) for his well-written [How to enable USB-Serial Port adapter (RS-232) in Ubuntu Linux](http://blog.mypapit.net/2008/05/how-to-use-usb-serial-port-converter-in-ubuntu.html) blog post
