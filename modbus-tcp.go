@@ -49,7 +49,7 @@ func (frame *TCPFrame) TransmitAndReceive(server string, port int) ([]byte, erro
 	if err == nil {
 		// attempt to connect to the slave device (server)
 		conn, err := net.DialTCP("tcp", nil, addr)
-		conn.SetDeadline(time.Now().Add(time.Duration(frame.TimeoutInSeconds) * time.Second))
+		conn.SetDeadline(time.Now().Add(time.Duration(frame.TimeoutInMilliseconds) * time.Millisecond))
 		defer conn.Close()
 
 		if err == nil {
@@ -79,7 +79,7 @@ func (frame *TCPFrame) TransmitAndReceive(server string, port int) ([]byte, erro
 func viaTCP(fnValidator func(byte) bool, h string, p, timeOut, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte) ([]byte, error) {
 	if fnValidator(functionCode) {
 		frame := new(TCPFrame)
-		frame.TimeoutInSeconds = timeOut
+		frame.TimeoutInMilliseconds = timeOut
 		frame.TransactionID = transactionID
 		frame.FunctionCode = functionCode
 		frame.EthernetToSerialBridge = serialBridge
