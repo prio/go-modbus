@@ -68,6 +68,7 @@ func ValidWriteFunction(fnCode byte) bool {
 }
 
 type TCPFrame struct {
+	TimeoutInSeconds       int
 	TransactionID          int
 	FunctionCode           byte
 	EthernetToSerialBridge bool

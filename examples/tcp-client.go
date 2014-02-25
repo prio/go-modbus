@@ -23,13 +23,14 @@ func main() {
 	flag.IntVar(&port, "port", defaultPort, fmt.Sprintf("Slave device port (the default is %d)", defaultPort))
 	flag.Parse()
 
-	// attempt to read the holding registers at address 200
+	// attempt to read one (0x01) holding registers starting at address 200
 	readData := make([]byte, 3)
 	readData[0] = byte(200 >> 8)   // (High Byte)
 	readData[1] = byte(200 & 0xff) // (Low Byte)
 	readData[2] = 0x01
 
-	readResult, readErr := modbusclient.TCPRead(host, port, 1, modbusclient.FUNCTION_READ_HOLDING_REGISTERS, false, 0x00, readData)
+	// make this read request transaction id 1, with a 3 second tcp timeout
+	readResult, readErr := modbusclient.TCPRead(host, port, 3, 1, modbusclient.FUNCTION_READ_HOLDING_REGISTERS, false, 0x00, readData)
 	if readErr != nil {
 		log.Println(readErr)
 	}
@@ -39,9 +40,10 @@ func main() {
 	writeData := make([]byte, 3)
 	writeData[0] = byte(300 >> 8)   // (High Byte)
 	writeData[1] = byte(300 & 0xff) // (Low Byte)
-	writeData[2] = 0xff
+	writeData[2] = 0xff             // 0xff turns the coil on; 0x00 turns the coil off
 
-	writeResult, writeErr := modbusclient.TCPWrite(host, port, 2, modbusclient.FUNCTION_WRITE_SINGLE_COIL, false, 0x00, writeData)
+	// make this read request transaction id 2, with a 3 second tcp timeout
+	writeResult, writeErr := modbusclient.TCPWrite(host, port, 3, 2, modbusclient.FUNCTION_WRITE_SINGLE_COIL, false, 0x00, writeData)
 	if writeErr != nil {
 		log.Println(writeErr)
 	}
