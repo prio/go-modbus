@@ -48,6 +48,9 @@ func (frame *TCPFrame) TransmitAndReceive(server string, port int) ([]byte, erro
 	if err == nil {
 		// attempt to connect to the slave device (server)
 		conn, err := net.DialTCP("tcp", nil, addr)
+		if err != nil {
+			return []byte{}, err
+		}
 		defer conn.Close()
 
 		if err == nil {
