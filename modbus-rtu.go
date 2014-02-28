@@ -71,7 +71,7 @@ func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
 	// serial port represented by the fd pointer
 	_, err := fd.Write(adu)
 	if err != nil {
-		return []byte{}, MODBUS_EXCEPTIONS[EXCEPTION_GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND]
+		return []byte{}, err
 	}
 
 	// allow the slave device adequate time to respond
@@ -81,7 +81,7 @@ func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
 	response := make([]byte, TCP_FRAME_MAXSIZE)
 	_, err = fd.Read(response)
 	if err != nil {
-		return []byte{}, MODBUS_EXCEPTIONS[EXCEPTION_GATEWAY_TARGET_DEVICE_FAILED_TO_RESPOND]
+		return []byte{}, err
 	}
 
 	// check the validity of the response
