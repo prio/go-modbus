@@ -7,6 +7,7 @@ package modbusclient
 
 import (
 	"os"
+	"syscall"
 	"time"
 )
 
@@ -110,4 +111,46 @@ func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
 		return []byte{}, MODBUS_EXCEPTIONS[EXCEPTION_UNSPECIFIED]
 	}
 	return response[3:(response_length + 3)], nil
+}
+
+// viaRTU is a private method which applies the given function validator,
+// to make sure the functionCode passed is valid for the operation
+// desired. If correct, it creates an RTUFrame given the corresponding
+// information, attempts to open the serialDevice, and if successful, calls
+// TransmitAndReceive, returning the result. Otherwise, it returns an illegal
+// function error, or the I/O device access error, whichever it encountered.
+func viaRTU(fnValidator func(byte) bool, serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16, data []byte) ([]byte, error) {
+	if fnValidator(functionCode) {
+		frame := new(RTUFrame)
+		frame.SlaveAddress = slaveAddress
+		frame.FunctionCode = functionCode
+		frame.StartRegister = startRegister
+		frame.NumberOfRegisters = numRegisters
+		if len(data) > 0 {
+			frame.Data = data
+		}
+
+		// make sure we can access the serial device
+		fd, err := os.OpenFile(serialDevice, os.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, 0666)
+		if err != nil {
+			return []byte{}, err
+		} else {
+			defer fd.Close()
+			result, err := frame.TransmitAndReceive(fd)
+			return result, err
+		}
+	}
+	return []byte{}, MODBUS_EXCEPTIONS[EXCEPTION_ILLEGAL_FUNCTION]
+}
+
+// RTURead performs the given modbus Read function over RTU to the given
+// serialDevice, using the given frame data
+func RTURead(serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16) ([]byte, error) {
+	return viaRTU(ValidReadFunction, serialDevice, slaveAddress, functionCode, startRegister, numRegisters, []byte{})
+}
+
+// RTUWrite performs the given modbus Write function over RTU to the given
+// serialDevice, using the given frame data
+func RTUWrite(serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16, data []byte) ([]byte, error) {
+	return viaRTU(ValidWriteFunction, serialDevice, slaveAddress, functionCode, startRegister, numRegisters, data)
 }
