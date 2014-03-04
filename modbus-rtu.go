@@ -56,6 +56,7 @@ func (frame *RTUFrame) GenerateRTUFrame() []byte {
 	packet_crc := crc(packet[:bytesUsed])
 	packet[bytesUsed] = byte(packet_crc & 0xff)
 	packet[(bytesUsed + 1)] = byte(packet_crc >> 8)
+	bytesUsed += 2
 
 	return packet[:bytesUsed]
 }
