@@ -44,31 +44,37 @@ func (frame *TCPFrame) GenerateTCPFrame() []byte {
 // of the slave device's reply, and error (if any)
 func (frame *TCPFrame) TransmitAndReceive(server string, port int) ([]byte, error) {
 	adu := frame.GenerateTCPFrame() // generate the ADU
+
+	// make sure the server:port combination resolves to a valid TCP address
 	addr, err := net.ResolveTCPAddr("tcp4", fmt.Sprintf("%s:%d", server, port))
-
-	if err == nil {
-		// attempt to connect to the slave device (server)
-		conn, err := net.DialTCP("tcp", nil, addr)
-		conn.SetDeadline(time.Now().Add(time.Duration(frame.TimeoutInMilliseconds) * time.Millisecond))
-		defer conn.Close()
-
-		if err == nil {
-			// transmit the ADU
-			_, err = conn.Write(adu)
-
-			if err == nil {
-				// read the response
-				response := make([]byte, TCP_FRAME_MAXSIZE)
-				n, err := conn.Read(response)
-
-				if err == nil {
-					// return only the number of bytes read
-					return response[:n], nil
-				}
-			}
-		}
+	if err != nil {
+		return []byte{}, err
 	}
-	return []byte{}, err
+
+	// attempt to connect to the slave device (server)
+	conn, err := net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	conn.SetDeadline(time.Now().Add(time.Duration(frame.TimeoutInMilliseconds) * time.Millisecond))
+	defer conn.Close()
+
+	// transmit the ADU
+	_, err = conn.Write(adu)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// read the response
+	response := make([]byte, TCP_FRAME_MAXSIZE)
+	n, err := conn.Read(response)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// return only the number of bytes read
+	return response[:n], nil
 }
 
 // viaTCP is a private method which applies the given function validator, to
