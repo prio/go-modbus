@@ -6,6 +6,8 @@
 package modbusclient
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"syscall"
 	"time"
@@ -68,6 +70,9 @@ func (frame *RTUFrame) GenerateRTUFrame() []byte {
 func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
 	// generate the ADU from the RTU frame
 	adu := frame.GenerateRTUFrame()
+	if frame.DebugTrace {
+		log.Println(fmt.Sprintf("Tx: %x", adu))
+	}
 
 	// transmit the ADU to the slave device via the
 	// serial port represented by the fd pointer
@@ -120,9 +125,10 @@ func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
 // information, attempts to open the serialDevice, and if successful, calls
 // TransmitAndReceive, returning the result. Otherwise, it returns an illegal
 // function error, or the I/O device access error, whichever it encountered.
-func viaRTU(fnValidator func(byte) bool, serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16, data []byte) ([]byte, error) {
+func viaRTU(fnValidator func(byte) bool, serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16, data []byte, debug bool) ([]byte, error) {
 	if fnValidator(functionCode) {
 		frame := new(RTUFrame)
+		frame.DebugTrace = debug
 		frame.SlaveAddress = slaveAddress
 		frame.FunctionCode = functionCode
 		frame.StartRegister = startRegister
@@ -146,12 +152,12 @@ func viaRTU(fnValidator func(byte) bool, serialDevice string, slaveAddress, func
 
 // RTURead performs the given modbus Read function over RTU to the given
 // serialDevice, using the given frame data
-func RTURead(serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16) ([]byte, error) {
-	return viaRTU(ValidReadFunction, serialDevice, slaveAddress, functionCode, startRegister, numRegisters, []byte{})
+func RTURead(serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16, debug bool) ([]byte, error) {
+	return viaRTU(ValidReadFunction, serialDevice, slaveAddress, functionCode, startRegister, numRegisters, []byte{}, debug)
 }
 
 // RTUWrite performs the given modbus Write function over RTU to the given
 // serialDevice, using the given frame data
-func RTUWrite(serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16, data []byte) ([]byte, error) {
-	return viaRTU(ValidWriteFunction, serialDevice, slaveAddress, functionCode, startRegister, numRegisters, data)
+func RTUWrite(serialDevice string, slaveAddress, functionCode byte, startRegister, numRegisters uint16, data []byte, debug bool) ([]byte, error) {
+	return viaRTU(ValidWriteFunction, serialDevice, slaveAddress, functionCode, startRegister, numRegisters, data, debug)
 }

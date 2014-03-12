@@ -23,6 +23,9 @@ func main() {
 	flag.IntVar(&port, "port", defaultPort, fmt.Sprintf("Slave device port (the default is %d)", defaultPort))
 	flag.Parse()
 
+	// turn on the debug trace option, to see what is being transmitted
+	trace := true
+
 	// attempt to read one (0x01) holding registers starting at address 200
 	readData := make([]byte, 3)
 	readData[0] = byte(200 >> 8)   // (High Byte)
@@ -30,7 +33,7 @@ func main() {
 	readData[2] = 0x01
 
 	// make this read request transaction id 1, with a 300 millisecond tcp timeout
-	readResult, readErr := modbusclient.TCPRead(host, port, 300, 1, modbusclient.FUNCTION_READ_HOLDING_REGISTERS, false, 0x00, readData)
+	readResult, readErr := modbusclient.TCPRead(host, port, 300, 1, modbusclient.FUNCTION_READ_HOLDING_REGISTERS, false, 0x00, readData, trace)
 	if readErr != nil {
 		log.Println(readErr)
 	}
@@ -43,7 +46,7 @@ func main() {
 	writeData[2] = 0xff             // 0xff turns the coil on; 0x00 turns the coil off
 
 	// make this read request transaction id 2, with a 300 millisecond tcp timeout
-	writeResult, writeErr := modbusclient.TCPWrite(host, port, 300, 2, modbusclient.FUNCTION_WRITE_SINGLE_COIL, false, 0x00, writeData)
+	writeResult, writeErr := modbusclient.TCPWrite(host, port, 300, 2, modbusclient.FUNCTION_WRITE_SINGLE_COIL, false, 0x00, writeData, trace)
 	if writeErr != nil {
 		log.Println(writeErr)
 	}

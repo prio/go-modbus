@@ -17,9 +17,12 @@ func main() {
 
 	if len(serialDevice) > 0 {
 
+		// turn on the debug trace option, to see what is being transmitted
+		trace := true
+
 		// attempt to read the 200 address register on
 		// slave device number 1 (0x01) at serialDevice
-		readResult, readErr := modbusclient.RTURead(serialDevice, 0x01, modbusclient.FUNCTION_READ_COILS, 200, 1)
+		readResult, readErr := modbusclient.RTURead(serialDevice, 0x01, modbusclient.FUNCTION_READ_HOLDING_REGISTERS, 200, 1, trace)
 		if readErr != nil {
 			log.Println(readErr)
 		}
@@ -27,7 +30,7 @@ func main() {
 
 		// attempt to write to a single coil at address 300
 		// on slave device number 1 (0x01) at serialDevice
-		writeResult, writeErr := modbusclient.RTUWrite(serialDevice, 0x01, modbusclient.FUNCTION_WRITE_SINGLE_COIL, 300, 1, []byte{0xff})
+		writeResult, writeErr := modbusclient.RTUWrite(serialDevice, 0x01, modbusclient.FUNCTION_WRITE_SINGLE_COIL, 300, 1, []byte{0xff}, trace)
 		if writeErr != nil {
 			log.Println(writeErr)
 		}

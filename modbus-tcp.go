@@ -6,6 +6,7 @@ package modbusclient
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"time"
 )
@@ -44,6 +45,9 @@ func (frame *TCPFrame) GenerateTCPFrame() []byte {
 // of the slave device's reply, and error (if any)
 func (frame *TCPFrame) TransmitAndReceive(server string, port int) ([]byte, error) {
 	adu := frame.GenerateTCPFrame() // generate the ADU
+	if frame.DebugTrace {
+		log.Println(fmt.Sprintf("Tx: %x", adu))
+	}
 
 	// make sure the server:port combination resolves to a valid TCP address
 	addr, err := net.ResolveTCPAddr("tcp4", fmt.Sprintf("%s:%d", server, port))
@@ -82,10 +86,11 @@ func (frame *TCPFrame) TransmitAndReceive(server string, port int) ([]byte, erro
 // correct, it creates a TCPFrame given the corresponding information,
 // calls TransmitAndReceive, returning the result. Otherwise, it returns
 // an illegal function error.
-func viaTCP(fnValidator func(byte) bool, h string, p, timeOut, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte) ([]byte, error) {
+func viaTCP(fnValidator func(byte) bool, h string, p, timeOut, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte, debug bool) ([]byte, error) {
 	if fnValidator(functionCode) {
 		frame := new(TCPFrame)
 		frame.TimeoutInMilliseconds = timeOut
+		frame.DebugTrace = debug
 		frame.TransactionID = transactionID
 		frame.FunctionCode = functionCode
 		frame.EthernetToSerialBridge = serialBridge
@@ -99,12 +104,12 @@ func viaTCP(fnValidator func(byte) bool, h string, p, timeOut, transactionID int
 
 // TCPRead performs the given modbus Read function over TCP to the given
 // host/port combination, using the given frame data
-func TCPRead(h string, p, timeOut, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte) ([]byte, error) {
-	return viaTCP(ValidReadFunction, h, p, timeOut, transactionID, functionCode, serialBridge, slaveAddress, data)
+func TCPRead(h string, p, timeOut, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte, debug bool) ([]byte, error) {
+	return viaTCP(ValidReadFunction, h, p, timeOut, transactionID, functionCode, serialBridge, slaveAddress, data, debug)
 }
 
 // TCPWrite performs the given modbus Write function over TCP to the given
 // host/port combination, using the given frame data
-func TCPWrite(h string, p, timeOut, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte) ([]byte, error) {
-	return viaTCP(ValidWriteFunction, h, p, timeOut, transactionID, functionCode, serialBridge, slaveAddress, data)
+func TCPWrite(h string, p, timeOut, transactionID int, functionCode byte, serialBridge bool, slaveAddress byte, data []byte, debug bool) ([]byte, error) {
+	return viaTCP(ValidWriteFunction, h, p, timeOut, transactionID, functionCode, serialBridge, slaveAddress, data, debug)
 }
