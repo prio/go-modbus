@@ -8,9 +8,9 @@ package modbusclient
 import (
 	"fmt"
 	"log"
-	"os"
-	"syscall"
+	"io"
 	"time"
+	"github.com/tarm/goserial"
 )
 
 // crc computes and returns a cyclic redundancy check of the given byte array
@@ -67,7 +67,7 @@ func (frame *RTUFrame) GenerateRTUFrame() []byte {
 // which generates the corresponding ADU, transmits it to the modbus server
 // (slave device) specified by the given file pointer (serial port), and
 // returns a byte array of th e slave device's reply, and error (if any)
-func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
+func (frame *RTUFrame) TransmitAndReceive(fd io.ReadWriteCloser) ([]byte, error) {
 	// generate the ADU from the RTU frame
 	adu := frame.GenerateRTUFrame()
 	if frame.DebugTrace {
@@ -86,10 +86,14 @@ func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
 
 	// then attempt to read the reply
 	response := make([]byte, TCP_FRAME_MAXSIZE)
-	_, err = fd.Read(response)
+	bytesRead, err := fd.Read(response)
 	if err != nil {
 		return []byte{}, err
 	}
+
+	if frame.DebugTrace {
+		log.Println(fmt.Sprintf("Rx: %x", response[:bytesRead]))
+	}	
 
 	// check the validity of the response
 	if response[0] != frame.SlaveAddress || response[1] != frame.FunctionCode {
@@ -116,6 +120,7 @@ func (frame *RTUFrame) TransmitAndReceive(fd *os.File) ([]byte, error) {
 		// crc failed (odd that there's no specific code for it)
 		return []byte{}, MODBUS_EXCEPTIONS[EXCEPTION_UNSPECIFIED]
 	}
+	
 	return response[3:(response_length + 3)], nil
 }
 
@@ -138,7 +143,10 @@ func viaRTU(fnValidator func(byte) bool, serialDevice string, slaveAddress, func
 		}
 
 		// make sure we can access the serial device
-		fd, err := os.OpenFile(serialDevice, os.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, 0666)
+		//fd, err := os.OpenFile(serialDevice, os.O_RDWR|syscall.O_NOCTTY|syscall.O_NDELAY, 0666)
+		c := &serial.Config{Name: serialDevice, Baud: 9600}
+		fd, err := serial.OpenPort(c)
+		
 		if err != nil {
 			return []byte{}, err
 		} else {
